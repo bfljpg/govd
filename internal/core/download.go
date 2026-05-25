@@ -190,7 +190,8 @@ func downloadFormat(
 
 	thumbnailFilePath, err = getThumbnail(ctx, format, filePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get thumbnail: %w", err)
+		ctx.Warnf("failed to get thumbnail, continuing without: %v", err)
+		thumbnailFilePath = ""
 	}
 
 	if format.MissingMetadata() {

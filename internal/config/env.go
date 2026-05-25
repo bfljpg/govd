@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"time"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
@@ -24,7 +25,10 @@ func loadFromEnv() {
 	parseEnvString("DOWNLOADS_DIR", &Env.DownloadsDirectory, false)
 	parseEnvString("PROXY", &Env.Proxy, false)
 	parseEnvDuration("MAX_DURATION", &Env.MaxDuration, false)
-	parseEnvInt64("MAX_FILE_SIZE", &Env.MaxFileSize, false)
+	if os.Getenv("MAX_FILE_SIZE") != "" {
+		parseEnvInt64("MAX_FILE_SIZE", &Env.MaxFileSize, false)
+		Env.MaxFileSize *= 1024 * 1024
+	}
 	parseEnvString("REPO_URL", &Env.RepoURL, false)
 	parseEnvInt("PROFILER_PORT", &Env.ProfilerPort, false)
 	parseEnvInt("METRICS_PORT", &Env.MetricsPort, false)
