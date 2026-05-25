@@ -9,4 +9,5 @@ type DownloadSettings struct {
 	Cookies        []*http.Cookie
 	DecryptionKey  *DecryptionKey
 	Retries        int
+	YtDlpMediaURL  string // when set, download via yt-dlp instead of HTTP
 }
