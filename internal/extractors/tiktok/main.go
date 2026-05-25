@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 
 	"github.com/govdbot/govd/internal/database"
 	"github.com/govdbot/govd/internal/models"
+	"github.com/govdbot/govd/internal/networking"
 	"github.com/govdbot/govd/internal/util"
 )
 
@@ -20,13 +22,19 @@ var VMExtractor = &models.Extractor{
 	Redirect:   true,
 
 	GetFunc: func(ctx *models.ExtractorContext) (*models.ExtractorResponse, error) {
-		redirectURL, err := ctx.FetchLocation(ctx.ContentURL, nil)
+		redirectURL, err := ctx.FetchLocation(ctx.ContentURL, &networking.RequestParams{
+			Headers: webHeaders,
+		})
 		if err != nil {
 			return nil, err
 		}
 		parsedURL, err := url.Parse(redirectURL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse redirect url: %w", err)
+		}
+
+		if parsedURL.Path == "/404" {
+			return nil, util.ErrUnavailable
 		}
 
 		if parsedURL.Path == "/login" {
@@ -79,7 +87,93 @@ func GetMedia(ctx *models.ExtractorContext) (*models.Media, error) {
 		}
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to get from web: %w", err)
+		ctx.Warnf("failed to get from web, trying yt-dlp fallback: %v", err)
+		ytURL := ctx.ContentURL
+		isPhotoPost := strings.Contains(ytURL, "/photo/") || strings.Contains(ytURL, "/p/")
+		ytURL = strings.Replace(ytURL, "/photo/", "/video/", 1)
+		ytURL = strings.Replace(ytURL, "/p/", "/video/", 1)
+
+		ytDetails, ytErr := util.GetYtDlpMetadata(ctx.Context, ytURL)
+		if ytErr != nil {
+			return nil, fmt.Errorf("failed to get from web and yt-dlp fallback failed: %w", ytErr)
+		}
+
+		media := ctx.NewMedia()
+		media.SetCaption(ytDetails.Description)
+		if media.Caption == "" {
+			media.SetCaption(ytDetails.Title)
+		}
+
+		// check if yt-dlp returned image formats (photo slideshow)
+		var imageURLs []string
+		if isPhotoPost {
+			// for photo slideshows, yt-dlp puts images in thumbnails
+			seenURLs := make(map[string]bool)
+			for _, t := range ytDetails.Thumbnails {
+				if t.URL == "" {
+					continue
+				}
+				// yt-dlp sometimes duplicates the same url with different ids (cover, originCover)
+				// we only want unique images
+				cleanURL := strings.Split(t.URL, "?")[0] // check base url to avoid dupes with different query params
+				if !seenURLs[cleanURL] {
+					seenURLs[cleanURL] = true
+					imageURLs = append(imageURLs, t.URL)
+				}
+			}
+		}
+
+		if len(imageURLs) > 0 {
+			// handle as photo slideshow
+			for _, imgURL := range imageURLs {
+				item := media.NewItem()
+				item.AddFormats(&models.MediaFormat{
+					Type:     database.MediaTypePhoto,
+					FormatID: "image",
+					URL:      []string{imgURL},
+				})
+			}
+			return media, nil
+		}
+
+		// handle as video
+		var bestWidth, bestHeight int32
+		var bestBitrate int64
+		vcodec := database.MediaCodecAvc
+		acodec := database.MediaCodecAac
+		for _, f := range ytDetails.Formats {
+			parsedVCodec := util.ParseVideoCodec(f.VCodec)
+			if parsedVCodec == "" {
+				continue
+			}
+			if int64(f.Bitrate) > bestBitrate || (f.Width > bestWidth && f.Height > bestHeight) {
+				bestWidth = f.Width
+				bestHeight = f.Height
+				bestBitrate = int64(f.Bitrate)
+				vcodec = parsedVCodec
+				parsedACodec := util.ParseAudioCodec(f.ACodec)
+				if parsedACodec != "" {
+					acodec = parsedACodec
+				}
+			}
+		}
+
+		item := media.NewItem()
+		item.AddFormats(&models.MediaFormat{
+			Type:       database.MediaTypeVideo,
+			FormatID:   "ytdlp_best",
+			URL:        []string{ytURL},
+			VideoCodec: vcodec,
+			AudioCodec: acodec,
+			Width:      bestWidth,
+			Height:     bestHeight,
+			Duration:   int32(ytDetails.Duration),
+			Bitrate:    bestBitrate,
+			DownloadSettings: &models.DownloadSettings{
+				YtDlpMediaURL: ytURL,
+			},
+		})
+		return media, nil
 	}
 
 	media := ctx.NewMedia()
@@ -115,8 +209,12 @@ func GetMedia(ctx *models.ExtractorContext) (*models.Media, error) {
 				Type:     database.MediaTypePhoto,
 				FormatID: "image",
 				URL:      image.URL.URLList,
+				DownloadSettings: &models.DownloadSettings{
+					Cookies: cookies,
+				},
 			})
 		}
 		return media, nil
 	}
 }
+

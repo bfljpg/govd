@@ -13,10 +13,14 @@ import (
 	"github.com/govdbot/govd/internal/util"
 )
 
-const videoURLBase = "https://www.tiktok.com/@_/video/"
+const (
+	videoURLBase = "https://www.tiktok.com/@_/video/"
+	photoURLBase = "https://www.tiktok.com/@_/photo/"
+)
 
 var (
-	universalDataPattern = regexp.MustCompile(`(?s)<script[^>]+\bid=["']__UNIVERSAL_DATA_FOR_REHYDRATION__["'][^>]*>(.*?)<\/script>`)
+	universalDataPattern = regexp.MustCompile(`(?s)<script[^>]*\bid=["']__UNIVERSAL_DATA_FOR_REHYDRATION__["'][^>]*>(.*?)<\/script>`)
+	photoPathPattern     = regexp.MustCompile(`\/(photo|p)\/[0-9]+`)
 
 	webHeaders = map[string]string{
 		"Host":            "www.tiktok.com",
@@ -32,11 +36,19 @@ var (
 )
 
 func GetVideoWeb(ctx *models.ExtractorContext) (*WebItemStruct, []*http.Cookie, error) {
-	awemeID := ctx.ContentID
+	fetchURL := ctx.ContentURL
+	if fetchURL == "" {
+		awemeID := ctx.ContentID
+		urlBase := videoURLBase
+		if photoPathPattern.MatchString(ctx.ContentURL) {
+			urlBase = photoURLBase
+		}
+		fetchURL = urlBase + awemeID
+	}
 
 	resp, err := ctx.Fetch(
 		http.MethodGet,
-		videoURLBase+awemeID,
+		fetchURL,
 		&networking.RequestParams{
 			Headers: webHeaders,
 		},
