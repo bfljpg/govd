@@ -1,8 +1,8 @@
 module github.com/govdbot/govd
 
-go 1.26
+go 1.24.0
 
-toolchain go1.26.0
+toolchain go1.24.13
 
 require (
 	github.com/BurntSushi/toml v1.5.0
