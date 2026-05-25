@@ -1,7 +1,7 @@
 services:
   bot:
     build: .
-    container_name: bot
+    container_name: govdbot
     restart: unless-stopped
     networks:
       - govd-network
@@ -20,7 +20,7 @@ services:
 
   db:
     image: postgres:latest
-    container_name: db
+    container_name: govd_db
     restart: unless-stopped
     environment:
       POSTGRES_DB: govd
