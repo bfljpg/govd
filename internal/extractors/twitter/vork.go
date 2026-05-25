@@ -11,7 +11,13 @@ import (
 // vork is an internal muxer used by Twitter and needs
 // double muxing to be compatible with standard players.
 // learn more: https://github.com/govdbot/govd/issues/29
-func IsVorkMuxer(inputPath string) bool {
+func IsVorkMuxer(inputPath string) (result bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			result = false
+		}
+	}()
+
 	buf, err := os.Open(inputPath)
 	if err != nil {
 		return false
