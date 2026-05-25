@@ -2,21 +2,18 @@ package youtube
 
 import (
 	"fmt"
-	"net/http"
 	"regexp"
 
-	"github.com/govdbot/govd/internal/logger"
+	"github.com/govdbot/govd/internal/database"
 	"github.com/govdbot/govd/internal/models"
 	"github.com/govdbot/govd/internal/util"
-
-	"github.com/bytedance/sonic"
 )
 
 var Extractor = &models.Extractor{
 	ID:          "youtube",
 	DisplayName: "YouTube",
 
-	URLPattern: regexp.MustCompile(`(?:https?:)?(?:\/\/)?(?:(?:www|m)\.)?(?:youtube(?:-nocookie)?\.com\/(?:(?:watch\?(?:.*&)?v=)|(?:embed\/)|(?:v\/)|(?:shorts\/))|youtu\.be\/)(?P<id>[\w-]{11})(?:[?&].*)?`),
+	URLPattern: regexp.MustCompile(`(?:https?:)?(?://)?(?:(?:www|m|music)\.)?(?:youtube(?:-nocookie)?\.com/(?:(?:watch\?(?:.*&)?v=)|(?:embed/)|(?:v/)|(?:shorts/)|(?:live/)|(?:(?:@[^/?#]+)/shorts/))|youtu\.be/)(?P<id>[\w-]{11})(?:[/?&].*)?`),
 	Host: []string{
 		"youtube",
 		"youtu",
@@ -24,7 +21,7 @@ var Extractor = &models.Extractor{
 	},
 
 	GetFunc: func(ctx *models.ExtractorContext) (*models.ExtractorResponse, error) {
-		video, err := GetVideoFromInv(ctx)
+		video, err := GetVideoFromYtDlp(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -34,67 +31,61 @@ var Extractor = &models.Extractor{
 	},
 }
 
-func GetVideoFromInv(ctx *models.ExtractorContext) (*models.Media, error) {
-	if ctx.Config == nil {
-		return nil, fmt.Errorf("youtube not configured")
-	}
-	var err error
-	for i := range ctx.Config.Instance {
-		instance, err := GetInvInstance(ctx, i)
-		if err != nil {
-			continue
-		}
-		media, err := GetFromInstance(ctx, instance)
-		if err == nil {
-			return media, nil
-		}
-		ctx.Debugf("invidious instance %s failed: %v", instance, err)
-	}
-	return nil, err
-}
-
-func GetFromInstance(ctx *models.ExtractorContext, instance string) (*models.Media, error) {
-	videoID := ctx.ContentID
-	reqURL := instance +
-		invEndpoint +
-		videoID +
-		"?local=true" // proxied CDN
-
-	ctx.Debugf("proxied invidious api: %s", reqURL)
-
-	resp, err := ctx.Fetch(
-		http.MethodGet,
-		reqURL, nil,
-	)
+func GetVideoFromYtDlp(ctx *models.ExtractorContext) (*models.Media, error) {
+	data, err := util.GetYtDlpMetadata(ctx.Context, ctx.ContentURL)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	logger.WriteFile("inv_youtube_response", resp)
-
-	var data *InvResponse
-	decoder := sonic.ConfigFastest.NewDecoder(resp.Body)
-	err = decoder.Decode(&data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	switch data.Error {
-	case "This video may be inappropriate for some users.":
-		return nil, util.ErrAgeRestricted
-	default:
-		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("bad response: %s", resp.Status)
+	formats := make([]*models.MediaFormat, 0, len(data.Formats))
+	for _, f := range data.Formats {
+		if f.URL == "" {
+			continue
 		}
+
+		vCodec := util.ParseVideoCodec(f.VCodec)
+		aCodec := util.ParseAudioCodec(f.ACodec)
+
+		var mediaType database.MediaType
+		switch {
+		case vCodec != "":
+			mediaType = database.MediaTypeVideo
+		case aCodec != "":
+			mediaType = database.MediaTypeAudio
+		default:
+			continue
+		}
+
+		fileSize := f.Filesize
+		if fileSize == 0 {
+			fileSize = f.FilesizeApprox
+		}
+
+		formats = append(formats, &models.MediaFormat{
+			FormatID:   f.FormatID,
+			Type:       mediaType,
+			VideoCodec: vCodec,
+			AudioCodec: aCodec,
+			Width:      f.Width,
+			Height:     f.Height,
+			FileSize:   fileSize,
+			Duration:   int32(data.Duration),
+			Bitrate:    int64(f.Bitrate),
+			URL:        []string{f.URL},
+			Title:      data.Title,
+			Artist:     data.Uploader,
+			DownloadSettings: &models.DownloadSettings{
+				ChunkSize: 10 * 1024 * 1024, // 10 MB
+			},
+		})
 	}
 
-	formats := ParseInvFormats(data, instance)
 	if len(formats) == 0 {
-		return nil, fmt.Errorf("no formats found")
+		return nil, fmt.Errorf("no suitable formats found")
 	}
 
 	media := ctx.NewMedia()
+	media.Caption = data.Description
 	item := media.NewItem()
 	item.AddFormats(formats...)
 
