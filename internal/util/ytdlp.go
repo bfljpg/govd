@@ -21,6 +21,8 @@ type YtDlpResponse struct {
 	Formats     []YtDlpFormat    `json:"formats"`
 	Thumbnails  []YtDlpThumbnail `json:"thumbnails"`
 	Cookies     string           `json:"cookies"`
+	IsLive      bool             `json:"is_live"`
+	LiveStatus  string           `json:"live_status"`
 }
 
 type YtDlpThumbnail struct {

@@ -177,3 +177,6 @@ other = "خوش آمدید {{.Name}} به govd، این یک ربات تلگرا
 [SupportedExtractorsMessage]
 hash = "sha1-c16d18ef8e24a2d2df3d011dbac5282bbd8783ca"
 other = "فهرست استخراج‌کننده‌های پشتیبانی شده توسط ربات"
+
+[ErrorLiveStream]
+other = "این محتوا یک پخش زنده است و قابل دانلود نیست"

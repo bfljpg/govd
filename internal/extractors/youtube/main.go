@@ -37,6 +37,10 @@ func GetVideoFromYtDlp(ctx *models.ExtractorContext) (*models.Media, error) {
 		return nil, err
 	}
 
+	if data.IsLive || data.LiveStatus == "is_live" || data.LiveStatus == "is_upcoming" {
+		return nil, util.ErrLiveStream
+	}
+
 	formats := make([]*models.MediaFormat, 0, len(data.Formats))
 	for _, f := range data.Formats {
 		if f.URL == "" {

@@ -177,3 +177,5 @@ other = "selamat datang {{.Name}} di govd, bot telegram open-source untuk mengun
 [SupportedExtractorsMessage]
 hash = "sha1-c16d18ef8e24a2d2df3d011dbac5282bbd8783ca"
 other = "daftar ekstraktor yang didukung oleh bot"
+[ErrorLiveStream]
+other = "Konten ini adalah siaran langsung dan tidak dapat diunduh"

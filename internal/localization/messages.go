@@ -191,4 +191,8 @@ var (
 		ID:    "ErrorPermissionDenied",
 		Other: "the bot does not have sufficient permissions to send this media. please grant the necessary permissions and try again",
 	}
+	ErrorLiveStream = &i18n.Message{
+		ID:    "ErrorLiveStream",
+		Other: "this content is a live stream and cannot be downloaded",
+	}
 )

@@ -177,3 +177,5 @@ other = "स्वागत है {{.Name}}, govd में, विभिन्
 [SupportedExtractorsMessage]
 hash = "sha1-c16d18ef8e24a2d2df3d011dbac5282bbd8783ca"
 other = "बॉट द्वारा समर्थित एक्सट्रैक्टर की सूची"
+[ErrorLiveStream]
+other = "यह सामग्री एक लाइव स्ट्रीम है और  डाउनलोड नहीं किया जा सकता"

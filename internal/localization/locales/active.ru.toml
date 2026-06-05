@@ -177,3 +177,6 @@ other = "добро пожаловать {{.Name}} в govd, telegram-бот с �
 [SupportedExtractorsMessage]
 hash = "sha1-c16d18ef8e24a2d2df3d011dbac5282bbd8783ca"
 other = "список экстракторов, поддерживаемых ботом"
+
+[ErrorLiveStream]
+other = "этот контент является прямой трансляцией и не может быть загружен"

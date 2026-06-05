@@ -177,3 +177,6 @@ other = "مرحباً {{.Name}} في govd، بوت تيليجرام مفتوح �
 [SupportedExtractorsMessage]
 hash = "sha1-c16d18ef8e24a2d2df3d011dbac5282bbd8783ca"
 other = "قائمة المستخرجات المدعومة من قبل البوت"
+
+[ErrorLiveStream]
+other = "هذا المحتوى بث مباشر ولا يمكن تنزيله"

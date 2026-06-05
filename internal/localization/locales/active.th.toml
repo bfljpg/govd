@@ -177,3 +177,6 @@ other = "ยินดีต้อนรับ {{.Name}} สู่ govd บอท
 [SupportedExtractorsMessage]
 hash = "sha1-c16d18ef8e24a2d2df3d011dbac5282bbd8783ca"
 other = "รายการตัวแยกข้อมูลที่บอทรองรับ"
+[ErrorLiveStream]
+#other = "เนื้อหานี้เป็นการถ่ายทอดสดและไม่สามา
+"

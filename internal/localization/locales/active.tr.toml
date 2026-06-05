@@ -177,3 +177,6 @@ other = "hoş geldin {{.Name}}, govd'ye, çeşitli sosyal platformlardan içerik
 [SupportedExtractorsMessage]
 hash = "sha1-c16d18ef8e24a2d2df3d011dbac5282bbd8783ca"
 other = "bot tarafından desteklenen çıkarıcıların listesi"
+
+[ErrorLiveStream]
+other = "bu içerik canlı yayındır ve indirilemez"
