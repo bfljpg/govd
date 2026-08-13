@@ -177,5 +177,7 @@ other = "bienvenido {{.Name}} a govd, un bot de telegram de código abierto para
 [SupportedExtractorsMessage]
 hash = "sha1-c16d18ef8e24a2d2df3d011dbac5282bbd8783ca"
 other = "lista de extractores compatibles con el bot"
+
 [ErrorLiveStream]
 other = "Este contenido es una transmisión en vivo y no se puede descargar"
+

@@ -177,3 +177,7 @@ other = "chào mừng {{.Name}} đến với govd, một bot telegram mã nguồ
 [SupportedExtractorsMessage]
 hash = "sha1-c16d18ef8e24a2d2df3d011dbac5282bbd8783ca"
 other = "danh sách các trình trích xuất được bot hỗ trợ"
+
+[ErrorLiveStream]
+other = "Nội dung này là phát trực tiếp và không thể tải xuống"
+

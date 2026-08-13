@@ -177,5 +177,7 @@ other = "欢迎 {{.Name}} 使用 govd，这是一个用于从各种社交平台�
 [SupportedExtractorsMessage]
 hash = "sha1-c16d18ef8e24a2d2df3d011dbac5282bbd8783ca"
 other = "机器人支持的提取器列表"
+
 [ErrorLiveStream]
 other = "此内容是直播，无法下载"
+

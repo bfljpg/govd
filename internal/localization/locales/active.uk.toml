@@ -177,9 +177,8 @@ other = "ласкаво просимо {{.Name}} до govd, telegram-бота з
 [SupportedExtractorsMessage]
 hash = "sha1-c16d18ef8e24a2d2df3d011dbac5282bbd8783ca"
 other = "список екстракторів, підтримуваних ботом"
-[ErrorLiveStream]
-EOFother = "Цей вміст є прям
-cat >> /home/bfljpg/docker/govd/internal/localization/locales/active.vi.toml << 'EOF'
 
 [ErrorLiveStream]
-other = "Nội dung này là phát trực tiếp và không thể tải xuống"
+other = "Цей вміст є прямою трансляцією та не може бути завантажений"
+
+

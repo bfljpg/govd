@@ -177,5 +177,7 @@ other = "vítejte {{.Name}} v govd, open-source telegram botu pro stahování ob
 [SupportedExtractorsMessage]
 hash = "sha1-c16d18ef8e24a2d2df3d011dbac5282bbd8783ca"
 other = "seznam extraktorů podporovaných botem"
+
 [ErrorLiveStream]
 other = "Tento obsah je živé vysílání a nelze jej stáhnout"
+

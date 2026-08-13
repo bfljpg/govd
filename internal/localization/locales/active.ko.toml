@@ -177,5 +177,7 @@ other = "{{.Name}}님, govd에 오신 것을 환영합니다. 다양한 소셜 �
 [SupportedExtractorsMessage]
 hash = "sha1-c16d18ef8e24a2d2df3d011dbac5282bbd8783ca"
 other = "봇에서 지원하는 추출기 목록"
+
 [ErrorLiveStream]
 other = "이 콘텐츠는 라이브 스트림이므로 다운로드할 수 없습니다"
+

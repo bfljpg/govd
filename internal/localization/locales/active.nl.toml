@@ -177,5 +177,7 @@ other = "welkom {{.Name}} bij govd, een open-source telegram-bot voor het downlo
 [SupportedExtractorsMessage]
 hash = "sha1-c16d18ef8e24a2d2df3d011dbac5282bbd8783ca"
 other = "lijst van extractors die door de bot worden ondersteund"
+
 [ErrorLiveStream]
 other = "Deze inhoud is een livestream en kan niet worden gedownload"
+

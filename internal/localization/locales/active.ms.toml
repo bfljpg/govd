@@ -177,5 +177,7 @@ other = "selamat datang {{.Name}} ke govd, bot telegram sumber terbuka untuk mem
 [SupportedExtractorsMessage]
 hash = "sha1-c16d18ef8e24a2d2df3d011dbac5282bbd8783ca"
 other = "senarai pengekstrak yang disokong oleh bot"
+
 [ErrorLiveStream]
 other = "Kandungan ini adalah siaran langsung dan tidak boleh dimuat turun"
+
