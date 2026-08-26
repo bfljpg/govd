@@ -1,6 +1,6 @@
 <h1 align="center">govd</h1>
 <p align="center">
-  <a href="https://t.me/govd_bot">
+  <a href="https://t.me/anotherdownloaderbot">
     <img alt="govd" title="govd" src="https://i.imgur.com/Vx8Psjn.png" width="450">
   </a>
 </p>
@@ -14,8 +14,8 @@
   <a href="https://github.com/govdbot/govd/stargazers"><img src="https://img.shields.io/github/stars/govdbot/govd?style=flat-square" alt="stars"></a>
   <a href="https://github.com/govdbot/govd/forks"><img src="https://img.shields.io/github/forks/govdbot/govd?style=flat-square" alt="forks"></a>
   <img src="https://img.shields.io/badge/docker-ready-blue?style=flat-square" alt="docker">
-  <a href="https://t.me/govd_bot"><img src="https://img.shields.io/badge/telegram-@govd__bot-2CA5E0?style=flat-square&logo=telegram" alt="telegram"></a>
-  <a href="https://tgbotmau.quoi.dev/?bot=govd_bot" target="_blank"><img alt="@govd_bot MAU" title="@govd_bot MAU" src="https://tgbotmau.quoi.dev/api/bot/govd_bot/mau/badge?style=flat-square"></a>
+  <a href="https://t.me/anotherdownloaderbot"><img src="https://img.shields.io/badge/telegram-@govd__bot-2CA5E0?style=flat-square&logo=telegram" alt="telegram"></a>
+  <a href="https://tgbotmau.quoi.dev/?bot=anotherdownloaderbot" target="_blank"><img alt="@anotherdownloaderbot MAU" title="@anotherdownloaderbot MAU" src="https://tgbotmau.quoi.dev/api/bot/anotherdownloaderbot/mau/badge?style=flat-square"></a>
 </p>
 
 ## features
@@ -42,7 +42,7 @@ if you are migrating from govd v1 to v2, refer to the [migration tool](https://g
 
 ## community
 
-- [official bot](https://t.me/govd_bot)
+- [official bot](https://t.me/anotherdownloaderbot)
 - [support chat](https://t.me/govdsupport)
 
 ## license
