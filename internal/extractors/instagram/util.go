@@ -29,6 +29,13 @@ const (
 	graphQLEndpoint = "https://www.instagram.com/graphql/query/"
 	polarisAction   = "PolarisPostActionLoadPostQueryQuery"
 
+	// GQL fingerprint constants — update these when Instagram returns 401
+	gqlDocID        = "8845758582119845"
+	gqlRolloutHash  = "1019933358"
+	gqlBloksVersion = "6309c8d03d8a3f47a1658ba38b304a3f837142ef5f637ebf1f8f52d4b802951e"
+	gqlAsbdID       = "129477"
+	gqlHiddenState  = "20126.HYP:instagram_web_pkg.2.1...0"
+
 	igramHostname = "api-wh.igram.world"
 	igramAPIBase  = "api.igram.world"
 	igramHMACKey  = "75f2d70d3724f98e4a7d1ffd0ba9cfd907f3ae2632ee159980e2c521bff62358"
@@ -41,18 +48,19 @@ var (
 
 	webHeaders = map[string]string{
 		"Accept":                    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-		"Accept-Language":           "en-GB,en;q=0.9",
+		"Accept-Language":           "en-US,en;q=0.9",
 		"Cache-Control":             "max-age=0",
 		"Dnt":                       "1",
 		"Priority":                  "u=0, i",
-		"Sec-Ch-Ua":                 `Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99`,
+		"Sec-Ch-Ua":                 `"Chromium";v="128", "Google Chrome";v="128", "Not-A.Brand";v="99"`,
 		"Sec-Ch-Ua-Mobile":          "?0",
-		"Sec-Ch-Ua-Platform":        "macOS",
+		"Sec-Ch-Ua-Platform":        "\"Windows\"",
 		"Sec-Fetch-Dest":            "document",
 		"Sec-Fetch-Mode":            "navigate",
 		"Sec-Fetch-Site":            "none",
 		"Sec-Fetch-User":            "?1",
 		"Upgrade-Insecure-Requests": "1",
+		"User-Agent":                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
 	}
 
 	igramHeaders = map[string]string{
@@ -366,6 +374,24 @@ func GetGQLData(ctx *models.ExtractorContext) (*GraphQLData, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to build GQL data: %w", err)
 	}
+
+	// Inject sessionid and csrftoken from private/cookies/instagram.txt into the GQL request
+	if sessionID := GetCookieValue(ctx, "sessionid"); sessionID != "" {
+		existingCookie := graphHeaders["cookie"]
+		graphHeaders["cookie"] = existingCookie + "; sessionid=" + sessionID
+		
+		if dsUserID := GetCookieValue(ctx, "ds_user_id"); dsUserID != "" {
+			graphHeaders["cookie"] += "; ds_user_id=" + dsUserID
+			// Update payload user as well
+			body["__user"] = dsUserID
+		}
+		
+		if csrf := GetCookieValue(ctx, "csrftoken"); csrf != "" {
+			graphHeaders["cookie"] += "; csrftoken=" + csrf
+			graphHeaders["X-CSRFToken"] = csrf
+		}
+	}
+
 	formData := url.Values{}
 	for key, value := range body {
 		formData.Set(key, value)
@@ -384,7 +410,7 @@ func GetGQLData(ctx *models.ExtractorContext) (*GraphQLData, error) {
 	}
 	formData.Set("variables", string(variablesJSON))
 	formData.Set("server_timestamps", "true")
-	formData.Set("doc_id", "8845758582119845") // idk what this is
+	formData.Set("doc_id", gqlDocID) // Instagram GQL persisted query ID – update in util.go consts when 401 starts
 
 	for key, value := range webHeaders {
 		graphHeaders[key] = value
@@ -431,11 +457,7 @@ func BuildGQLData() (map[string]string, map[string]string, error) {
 		clientCapabilityGrade = "EXCELLENT"
 		sessionInternalID     = "7436540909012459023"
 		apiVersion            = "1"
-		rolloutHash           = "1019933358"
 		appID                 = "936619743392459"
-		bloksVersionID        = "6309c8d03d8a3f47a1658ba38b304a3f837142ef5f637ebf1f8f52d4b802951e"
-		asbdID                = "129477"
-		hiddenState           = "20126.HYP:instagram_web_pkg.2.1...0"
 		loggedIn              = "0"
 		cometRequestID        = "7"
 		appVersion            = "0"
@@ -467,8 +489,8 @@ func BuildGQLData() (map[string]string, map[string]string, error) {
 		"x-ig-app-id":        appID,
 		"X-FB-LSD":           sessionData,
 		"X-CSRFToken":        csrfToken,
-		"X-Bloks-Version-Id": bloksVersionID,
-		"x-asbd-id":          asbdID,
+		"X-Bloks-Version-Id": gqlBloksVersion,
+		"x-asbd-id":          gqlAsbdID,
 		"cookie":             strings.Join(cookies, "; "),
 		"Content-Type":       "application/x-www-form-urlencoded",
 		"X-FB-Friendly-Name": polarisAction,
@@ -477,10 +499,10 @@ func BuildGQLData() (map[string]string, map[string]string, error) {
 		"__d":         domain,
 		"__a":         apiVersion,
 		"__s":         session,
-		"__hs":        hiddenState,
+		"__hs":        gqlHiddenState,
 		"__req":       requestID,
 		"__ccg":       clientCapabilityGrade,
-		"__rev":       rolloutHash,
+		"__rev":       gqlRolloutHash,
 		"__hsi":       sessionInternalID,
 		"__dyn":       dynamicFlags,
 		"__csr":       clientSessionRnd,
@@ -490,11 +512,106 @@ func BuildGQLData() (map[string]string, map[string]string, error) {
 		"dpr":         pixelRatio,
 		"lsd":         sessionData,
 		"jazoest":     jazoest,
-		"__spin_r":    rolloutHash,
+		"__spin_r":    gqlRolloutHash,
 		"__spin_b":    buildType,
 		"__spin_t":    timestamp,
 	}
 	return headers, body, nil
+}
+
+// GetCookieValue returns the value of a named cookie from the extractor's
+// HTTP client cookie jar (loaded from private/cookies/instagram.txt).
+func GetCookieValue(ctx *models.ExtractorContext, name string) string {
+	for _, c := range ctx.HTTPClient.Cookies {
+		if c.Name == name {
+			return c.Value
+		}
+	}
+	return ""
+}
+
+// GetNativeStory fetches a story via Instagram's private mobile API
+// (https://i.instagram.com/api/v1/media/<id>/info/) using the session
+// cookies loaded from private/cookies/instagram.txt.
+func GetNativeStory(ctx *models.ExtractorContext) (*models.Media, error) {
+	sessionID := GetCookieValue(ctx, "sessionid")
+	if sessionID == "" {
+		return nil, fmt.Errorf("no sessionid cookie available")
+	}
+	csrf := GetCookieValue(ctx, "csrftoken")
+	dsUID := GetCookieValue(ctx, "ds_user_id")
+
+	apiURL := "https://i.instagram.com/api/v1/media/" + ctx.ContentID + "/info/"
+
+	cookieStr := "sessionid=" + sessionID
+	if csrf != "" {
+		cookieStr += "; csrftoken=" + csrf
+	}
+	if dsUID != "" {
+		cookieStr += "; ds_user_id=" + dsUID
+	}
+
+	nativeHeaders := map[string]string{
+		"User-Agent":   "Instagram 275.0.0.27.98 Android (33/13; 420dpi; 1080x2400; samsung; SM-G991B; o1s; exynos2100; en_US; 458229258)",
+		"X-IG-App-ID": "936619743392459",
+		"Cookie":      cookieStr,
+	}
+	if csrf != "" {
+		nativeHeaders["X-CSRFToken"] = csrf
+	}
+
+	resp, err := ctx.Fetch(
+		http.MethodGet,
+		apiURL,
+		&networking.RequestParams{
+			Headers: nativeHeaders,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get response: %s", resp.Status)
+	}
+
+	var info MediaInfoResponse
+	decoder := sonic.ConfigFastest.NewDecoder(resp.Body)
+	if err := decoder.Decode(&info); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+	if len(info.Items) == 0 {
+		return nil, fmt.Errorf("no items in response")
+	}
+
+	result := info.Items[0]
+	media := ctx.NewMedia()
+	item := media.NewItem()
+
+	if len(result.VideoVersions) > 0 {
+		video := GetBestVideoVersion(result.VideoVersions)
+		item.AddFormats(&models.MediaFormat{
+			FormatID:   "video",
+			Type:       database.MediaTypeVideo,
+			URL:        []string{video.URL},
+			VideoCodec: database.MediaCodecAvc,
+			AudioCodec: database.MediaCodecAac,
+			Width:      int32(video.Width),
+			Height:     int32(video.Height),
+		})
+	} else if result.ImageVersions != nil && len(result.ImageVersions.Candidates) > 0 {
+		image := GetBestCandidate(result.ImageVersions.Candidates)
+		item.AddFormats(&models.MediaFormat{
+			Type:     database.MediaTypePhoto,
+			FormatID: "photo",
+			URL:      []string{image.URL},
+		})
+	} else {
+		return nil, fmt.Errorf("no video or image found in story")
+	}
+
+	return media, nil
 }
 
 func GetBestCandidate(candidates []*Candidates) *Candidates {
@@ -521,4 +638,78 @@ func GetBestVideoVersion(versions []*VideoVersions) *VideoVersions {
 		}
 	}
 	return best
+}
+
+// GetDDInstaMedia fetches media via d.ddinstagram.com which proxies Instagram
+// embed pages from a different IP, bypassing Instagram's anonymous request blocks.
+// It follows the 302 redirect for /p/ID/1, /p/ID/2, ... until a non-redirect
+// or 404 is returned, collecting each resolved CDN URL.
+func GetDDInstaMedia(ctx *models.ExtractorContext) (*models.Media, error) {
+	httpClient := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse // do NOT follow; we want the Location header
+		},
+	}
+
+	media := ctx.NewMedia()
+
+	for idx := 1; idx <= 10; idx++ {
+		mediaURL := fmt.Sprintf(
+			"https://d.ddinstagram.com/p/%s/%d",
+			ctx.ContentID,
+			idx,
+		)
+		req, err := http.NewRequest(http.MethodGet, mediaURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build ddinstagram request: %w", err)
+		}
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
+
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("ddinstagram request failed: %w", err)
+		}
+		resp.Body.Close()
+
+		// 404 or anything other than a redirect means no more items
+		if resp.StatusCode == http.StatusNotFound {
+			break
+		}
+		if resp.StatusCode != http.StatusFound &&
+			resp.StatusCode != http.StatusMovedPermanently &&
+			resp.StatusCode != http.StatusSeeOther &&
+			resp.StatusCode != http.StatusTemporaryRedirect &&
+			resp.StatusCode != http.StatusPermanentRedirect {
+			break
+		}
+
+		location := resp.Header.Get("Location")
+		if location == "" {
+			break
+		}
+
+		item := media.NewItem()
+		// Determine type by extension in the CDN URL
+		lowerLoc := strings.ToLower(location)
+		if strings.Contains(lowerLoc, ".mp4") {
+			item.AddFormats(&models.MediaFormat{
+				FormatID:   "video",
+				Type:       database.MediaTypeVideo,
+				VideoCodec: database.MediaCodecAvc,
+				AudioCodec: database.MediaCodecAac,
+				URL:        []string{location},
+			})
+		} else {
+			item.AddFormats(&models.MediaFormat{
+				FormatID: "image",
+				Type:     database.MediaTypePhoto,
+				URL:      []string{location},
+			})
+		}
+	}
+
+	if len(media.Items) == 0 {
+		return nil, fmt.Errorf("no media found via ddinstagram")
+	}
+	return media, nil
 }
