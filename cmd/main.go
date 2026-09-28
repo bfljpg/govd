@@ -8,6 +8,7 @@ import (
 	"github.com/govdbot/govd/internal/bot"
 	"github.com/govdbot/govd/internal/config"
 	"github.com/govdbot/govd/internal/database"
+	"github.com/govdbot/govd/internal/extractors/instagram"
 	"github.com/govdbot/govd/internal/localization"
 	"github.com/govdbot/govd/internal/logger"
 	"github.com/govdbot/govd/internal/util"
@@ -58,6 +59,7 @@ func main() {
 	localization.Init()
 	database.Init()
 	util.CleanupDownloadsJob()
+	instagram.StartKeepalive()
 
 	go bot.Start()
 
