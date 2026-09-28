@@ -148,4 +148,6 @@ type Result struct {
 	OriginalHeight int              `json:"original_height"`
 	OriginalWidth  int              `json:"original_width"`
 	Pk             string           `json:"pk"`
+	MediaType      int              `json:"media_type"`   // 1=photo, 2=video, 8=carousel
+	CarouselMedia  []*Result        `json:"carousel_media"` // non-nil for media_type=8
 }

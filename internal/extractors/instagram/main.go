@@ -41,21 +41,28 @@ var Extractor = &models.Extractor{
 				Media: media,
 			}, nil
 		}
-		// method 3: get media from 3rd party service (igram)
-		media, err3 := GetIGramPost(ctx)
+		// method 3: get media via Instagram native private API (i.instagram.com)
+		media, err3 := GetNativePost(ctx)
 		if err3 == nil {
 			return &models.ExtractorResponse{
 				Media: media,
 			}, nil
 		}
-		// method 4: get media via yt-dlp (native mobile api)
-		media, err4 := GetYtDlpMedia(ctx)
+		// method 4: get media from 3rd party service (igram)
+		media, err4 := GetIGramPost(ctx)
 		if err4 == nil {
 			return &models.ExtractorResponse{
 				Media: media,
 			}, nil
 		}
-		return nil, fmt.Errorf("all methods failed: %w; %w; %w; %w", err1, err2, err3, err4)
+		// method 5: get media via yt-dlp (native mobile api)
+		media, err5 := GetYtDlpMedia(ctx)
+		if err5 == nil {
+			return &models.ExtractorResponse{
+				Media: media,
+			}, nil
+		}
+		return nil, fmt.Errorf("all methods failed: %w; %w; %w; %w; %w", err1, err2, err3, err4, err5)
 	},
 }
 

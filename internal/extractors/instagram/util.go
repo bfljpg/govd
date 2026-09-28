@@ -713,3 +713,113 @@ func GetDDInstaMedia(ctx *models.ExtractorContext) (*models.Media, error) {
 	}
 	return media, nil
 }
+
+// ShortcodeToID converts an Instagram shortcode (e.g. "DcA59LzC1Hy") to its
+// numeric media ID using Instagram's modified base64 alphabet.
+func ShortcodeToID(shortcode string) string {
+	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+	var id uint64
+	for _, c := range shortcode {
+		id = id*64 + uint64(strings.IndexRune(alphabet, c))
+	}
+	return strconv.FormatUint(id, 10)
+}
+
+// addNativeResultToMedia converts a single Result (photo or video) into a media item.
+func addNativeResultToMedia(media *models.Media, result *Result) {
+	item := media.NewItem()
+	if len(result.VideoVersions) > 0 {
+		video := GetBestVideoVersion(result.VideoVersions)
+		item.AddFormats(&models.MediaFormat{
+			FormatID:   "video",
+			Type:       database.MediaTypeVideo,
+			URL:        []string{video.URL},
+			VideoCodec: database.MediaCodecAvc,
+			AudioCodec: database.MediaCodecAac,
+			Width:      int32(video.Width),
+			Height:     int32(video.Height),
+		})
+	} else if result.ImageVersions != nil && len(result.ImageVersions.Candidates) > 0 {
+		image := GetBestCandidate(result.ImageVersions.Candidates)
+		item.AddFormats(&models.MediaFormat{
+			FormatID: "photo",
+			Type:     database.MediaTypePhoto,
+			URL:      []string{image.URL},
+		})
+	}
+}
+
+// GetNativePost fetches a regular post (photo, video, or carousel) via
+// Instagram's private mobile API using session cookies from instagram.txt.
+// It converts the shortcode to a numeric ID, calls /api/v1/media/<id>/info/,
+// and handles carousel (media_type=8) by iterating carousel_media.
+func GetNativePost(ctx *models.ExtractorContext) (*models.Media, error) {
+	sessionID := GetCookieValue(ctx, "sessionid")
+	if sessionID == "" {
+		return nil, fmt.Errorf("no sessionid cookie available")
+	}
+	csrf := GetCookieValue(ctx, "csrftoken")
+	dsUID := GetCookieValue(ctx, "ds_user_id")
+
+	numericID := ShortcodeToID(ctx.ContentID)
+	apiURL := "https://i.instagram.com/api/v1/media/" + numericID + "/info/"
+
+	cookieStr := "sessionid=" + sessionID
+	if csrf != "" {
+		cookieStr += "; csrftoken=" + csrf
+	}
+	if dsUID != "" {
+		cookieStr += "; ds_user_id=" + dsUID
+	}
+
+	nativeHeaders := map[string]string{
+		"User-Agent":   "Instagram 275.0.0.27.98 Android (33/13; 420dpi; 1080x2400; samsung; SM-G991B; o1s; exynos2100; en_US; 458229258)",
+		"X-IG-App-ID": "936619743392459",
+		"Cookie":      cookieStr,
+	}
+	if csrf != "" {
+		nativeHeaders["X-CSRFToken"] = csrf
+	}
+
+	resp, err := ctx.Fetch(
+		http.MethodGet,
+		apiURL,
+		&networking.RequestParams{
+			Headers: nativeHeaders,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get response: %s", resp.Status)
+	}
+
+	var info MediaInfoResponse
+	decoder := sonic.ConfigFastest.NewDecoder(resp.Body)
+	if err := decoder.Decode(&info); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+	if len(info.Items) == 0 {
+		return nil, fmt.Errorf("no items in response")
+	}
+
+	result := info.Items[0]
+	media := ctx.NewMedia()
+
+	// media_type 8 = carousel/sidecar
+	if result.MediaType == 8 && len(result.CarouselMedia) > 0 {
+		for _, cm := range result.CarouselMedia {
+			addNativeResultToMedia(media, cm)
+		}
+	} else {
+		addNativeResultToMedia(media, result)
+	}
+
+	if len(media.Items) == 0 {
+		return nil, fmt.Errorf("no media found in response")
+	}
+	return media, nil
+}
