@@ -11,6 +11,7 @@ import (
 type VideoProbeData struct {
 	Streams []struct {
 		CodecType string `json:"codec_type"`
+		CodecName string `json:"codec_name"`
 		Width     int32  `json:"width"`
 		Height    int32  `json:"height"`
 	} `json:"streams"`
@@ -48,4 +49,23 @@ func ExtractVideoMetadata(inputPath string) (int32, int32, int32) {
 	}
 
 	return width, height, duration
+}
+
+// ProbeVideoCodec returns the actual video codec name from the file
+// using ffprobe. Returns empty string on error.
+func ProbeVideoCodec(inputPath string) string {
+	data, err := ffmpeg.Probe(inputPath)
+	if err != nil {
+		return ""
+	}
+	probeData := &VideoProbeData{}
+	if err := json.Unmarshal([]byte(data), probeData); err != nil {
+		return ""
+	}
+	for _, s := range probeData.Streams {
+		if s.CodecType == "video" {
+			return s.CodecName
+		}
+	}
+	return ""
 }

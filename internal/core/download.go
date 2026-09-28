@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/govdbot/govd/internal/database"
@@ -105,6 +106,9 @@ func downloadItem(
 		return
 	}
 
+	// transcode to H.264 if needed (for iOS compatibility)
+	addTranscodeIfNeeded(downloadedFormat)
+
 	// merge audio into video if needed
 	mergeFormats(item, downloadedFormat)
 
@@ -200,6 +204,15 @@ func downloadFormat(
 		// this is needed for Telegram video messages
 		// and for validating the format
 		insertVideoInfo(format, filePath)
+	}
+
+	// update file size from disk so post-download validation
+	// can catch files that exceed Telegram's upload limit
+	// (yt-dlp metadata filesize_approx is often 0 or inaccurate)
+	if format.FileSize == 0 {
+		if fi, err := os.Stat(filePath); err == nil {
+			format.FileSize = fi.Size()
+		}
 	}
 
 	return &models.DownloadedFormat{

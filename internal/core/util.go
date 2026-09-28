@@ -123,3 +123,38 @@ func mergeFormats(item *models.MediaItem, format *models.DownloadedFormat) {
 		plugins.MergeAudio,
 	)
 }
+
+// addTranscodeIfNeeded appends the TranscodeH264 plugin when the
+// selected video format uses a codec not supported by iOS
+// (VP9, AV1, HEVC, etc.). This ensures the video is re-encoded
+// to H.264/AAC before being sent, making it playable on all devices.
+// It also probes the actual downloaded file to catch cases where the
+// extractor incorrectly declared a codec (e.g. Instagram labelling
+// HEVC streams as AVC).
+func addTranscodeIfNeeded(format *models.DownloadedFormat) {
+	if format.Format.Type != database.MediaTypeVideo {
+		return
+	}
+
+	needsTranscode := false
+
+	// check declared codec first
+	vc := format.Format.VideoCodec
+	if vc != database.MediaCodecAvc && vc != "" {
+		needsTranscode = true
+	}
+
+	// also probe the actual file to catch misdeclared codecs
+	// (e.g. Instagram reels served as HEVC but labelled AVC)
+	if !needsTranscode && format.FilePath != "" {
+		actualCodec := libav.ProbeVideoCodec(format.FilePath)
+		switch actualCodec {
+		case "hevc", "vp9", "vp8", "av1":
+			needsTranscode = true
+		}
+	}
+
+	if needsTranscode {
+		format.Format.Plugins = append(format.Format.Plugins, plugins.TranscodeH264)
+	}
+}

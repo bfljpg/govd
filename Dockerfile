@@ -1,4 +1,4 @@
-FROM golang:1.24-alpine AS builder
+FROM golang:1.24-alpine3.22 AS builder
 
 ENV GOCACHE=/root/.cache/go-build
 
@@ -27,7 +27,7 @@ RUN --mount=type=cache,target="/root/.cache/go-build" \
     -ldflags="-s -w" \
     -o govd ./cmd/main.go
 
-FROM alpine:3.21 AS runtime
+FROM alpine:3.22 AS runtime
 
 WORKDIR /app
 
