@@ -221,8 +221,7 @@ func (mi *MediaItem) GetDefaultVideoFormat() *MediaFormat {
 		}
 		return 0
 	})
-	bestFormat := filtered[0]
-	return bestFormat
+	return filtered[0]
 }
 
 func (mi *MediaItem) GetDefaultAudioFormat() *MediaFormat {

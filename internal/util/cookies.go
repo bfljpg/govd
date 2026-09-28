@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -43,4 +44,15 @@ func ParseCookieFile(fileName string) []*http.Cookie {
 
 	logger.L.Debugf("parsed cookie file: %s", fileName)
 	return cookies
+}
+
+// InvalidateCookieCache removes a cookie file's cached value so the next call
+// to ParseCookieFile re-reads it from disk. Used by the keepalive goroutine
+// to pick up manually refreshed cookies without restarting the container.
+func InvalidateCookieCache(fileName string) error {
+	if _, ok := cookiesCache[fileName]; !ok {
+		return fmt.Errorf("cookie file %s not in cache", fileName)
+	}
+	delete(cookiesCache, fileName)
+	return nil
 }

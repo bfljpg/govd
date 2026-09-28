@@ -79,7 +79,9 @@ func GetVideoFromYtDlp(ctx *models.ExtractorContext) (*models.Media, error) {
 			Title:      data.Title,
 			Artist:     data.Uploader,
 			DownloadSettings: &models.DownloadSettings{
-				ChunkSize: 10 * 1024 * 1024, // 10 MB
+				ChunkSize:     10 * 1024 * 1024, // 10 MB
+				YtDlpMediaURL: ctx.ContentURL,
+				YtDlpFormatID: f.FormatID,
 			},
 		})
 	}

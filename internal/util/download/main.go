@@ -36,7 +36,7 @@ func DownloadFile(
 	// use yt-dlp for download when YtDlpMediaURL is set
 	if settings.YtDlpMediaURL != "" {
 		ctx.Debugf("downloading via yt-dlp: %s", settings.YtDlpMediaURL)
-		err := util.DownloadWithYtDlp(ctx.Context, settings.YtDlpMediaURL, filePath)
+		err := util.DownloadWithYtDlp(ctx.Context, settings.YtDlpMediaURL, filePath, settings.YtDlpFormatID)
 		if err != nil {
 			return "", fmt.Errorf("yt-dlp download failed: %w", err)
 		}

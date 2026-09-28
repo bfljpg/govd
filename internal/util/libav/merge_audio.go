@@ -1,6 +1,7 @@
 package libav
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 
@@ -12,6 +13,7 @@ func MergeVideoWithAudio(
 	audioPath string,
 	outputPath string,
 ) error {
+	var stderr bytes.Buffer
 	err := ffmpeg.Output(
 		[]*ffmpeg.Stream{
 			ffmpeg.Input(videoPath),
@@ -23,12 +25,16 @@ func MergeVideoWithAudio(
 			"c:v":      "copy",
 			"c:a":      "copy",
 		}).
-		Silent(true).
 		OverWriteOutput().
+		WithErrorOutput(&stderr).
+		Silent(true).
 		Run()
 
 	if err != nil {
 		os.Remove(outputPath)
+		if stderr.Len() > 0 {
+			return fmt.Errorf("failed to merge files: %w: %s", err, stderr.String())
+		}
 		return fmt.Errorf("failed to merge files: %w", err)
 	}
 

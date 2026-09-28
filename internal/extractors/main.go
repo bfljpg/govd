@@ -26,6 +26,7 @@ var Extractors = []*models.Extractor{
 	ninegag.Extractor,
 	youtube.Extractor,
 	pinterest.ShortExtractor,
+	pinterest.IdeasExtractor,
 	pinterest.Extractor,
 	reddit.Extractor,
 	reddit.ShortExtractor,

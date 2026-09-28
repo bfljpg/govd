@@ -105,7 +105,8 @@ func GetYtDlpMetadata(ctx context.Context, urlStr string) (*YtDlpResponse, error
 // DownloadWithYtDlp downloads a video using yt-dlp directly.
 // This is needed for sites like TikTok where CDN URLs require
 // yt-dlp's session/cookie handling for proper downloads.
-func DownloadWithYtDlp(ctx context.Context, urlStr string, outputPath string) error {
+// If formatID is non-empty, only that specific format is downloaded.
+func DownloadWithYtDlp(ctx context.Context, urlStr string, outputPath string, formatID ...string) error {
 	args := []string{
 		"-o", outputPath,
 		"--no-playlist",
@@ -114,6 +115,9 @@ func DownloadWithYtDlp(ctx context.Context, urlStr string, outputPath string) er
 		"--no-check-certificates",
 		"--merge-output-format", "mp4",
 		"--no-part",
+	}
+	if len(formatID) > 0 && formatID[0] != "" {
+		args = append(args, "-f", formatID[0])
 	}
 	args = append(args, resolveCookieArgs(urlStr)...)
 	args = append(args, urlStr)
@@ -130,10 +134,14 @@ func DownloadWithYtDlp(ctx context.Context, urlStr string, outputPath string) er
 		return nil
 	}
 
-	// check for common yt-dlp naming patterns
+	// check for common yt-dlp naming patterns (video and audio extensions)
+	base := strings.TrimSuffix(outputPath, filepath.Ext(outputPath))
 	candidates := []string{
 		outputPath + ".mp4",
-		strings.TrimSuffix(outputPath, filepath.Ext(outputPath)) + ".mp4",
+		base + ".mp4",
+		base + ".m4a",
+		base + ".webm",
+		base + ".opus",
 	}
 	for _, candidate := range candidates {
 		if _, err := os.Stat(candidate); err == nil {
